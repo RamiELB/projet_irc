@@ -10,6 +10,10 @@ SERVER = 'localhost'
 
 # -------------------------------------------------------------------------------------------#
 
+CODE_USERNAME = "[USERNAME] "
+
+# -------------------------------------------------------------------------------------------#
+
 
 class irc_client:
     def __init__(self, user_name, host, port):
@@ -34,6 +38,11 @@ class irc_client:
         self.write_thread = WriteServer(self)
         self.listen_thread.start()
         self.write_thread.start()
+
+        # Send UserName Once
+        send_message = SendMessage(sc,CODE_USERNAME + user_name)
+        send_message.start()
+
 
     def away(self, away_msg=''):
         self.is_away = not self.is_away
@@ -82,7 +91,20 @@ class WriteServer(threading.Thread):
                 self.client.socket.send(msg.encode('utf8'))
 
 
-# -------------------------------------------------------------------------------------------#   
+# -------------------------------------------------------------------------------------------#  
+
+
+class SendMessage(threading.Thread):
+    def __init__(self, server, msg): 
+        threading.Thread.__init__(self) 
+        self.server = server
+        self.msg = msg
+
+    def run(self):
+            self.server.send(self.msg.encode(FORMAT)) 
+
+
+# -------------------------------------------------------------------------------------------#  
 
 
 def help():
@@ -102,7 +124,7 @@ def help():
 if __name__ == "__main__":
     args = sys.argv[1:]
     if len(args) == 2:
-        client = irc_client(args[0],SERVER,int(args[1]))
+        client = irc_client(args[0], SERVER, int(args[1]))
     else:
         print("[ERROR] 1st argument must be username, 2nd argument must be serve's name")
         

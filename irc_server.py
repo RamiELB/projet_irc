@@ -10,6 +10,9 @@ DISCONNECT_MSG = "!DISCONNECT"
 NB_CONNECTION = 10
 SERVER = 'localhost'
 
+# -------------------------------------------------------------------------------------------#
+
+CODE_USERNAME = "[USERNAME]"
 
 # -------------------------------------------------------------------------------------------#
 
@@ -41,6 +44,7 @@ class irc_server:
         self.server_name = server_name
         self.channels = {}
         self.users = {}
+        self.nb_users = 0
 
 
         # Main channel
@@ -57,10 +61,10 @@ class irc_server:
 
         print(f"[LISTENING] Server is listening on {IP}:{PORT}")
 
-    def new_user(self, user_name): 
-        new_user = irc_client(user_name)
-        self.users[user_name] = new_user
-        return new_user
+    def new_user(self, user_name, client_socket): 
+        self.users[user_name] = client_socket
+        self.nb_users += 1
+        
 
     def connect_to_channel(self, channel_name, user_name):
         if channel_name in self.channels:
@@ -77,19 +81,19 @@ class irc_server:
     def start(self):
         while True:
             client, addr = self.main_socket.accept()
-            handle = ListenClient(client, addr)  
+            handle = HandleClient(self, client, addr)  
             handle.start()
-            self.new_user()
             print(f"[ACTIVE CONNECTION] {threading.active_count() - 1}")
 
 
 # -------------------------------------------------------------------------------------------#
 
 
-class ListenClient(threading.Thread):
-    def __init__(self,client, addr):
+class HandleClient(threading.Thread):
+    def __init__(self,server, client, addr):
         print(f"[NEW CONNECTION] {addr} connected.")
         threading.Thread.__init__(self)
+        self.server = server
         self.client = client
         self.addr = addr
 
@@ -101,6 +105,14 @@ class ListenClient(threading.Thread):
                 connected = False
 
             print(f"[{self.addr}] {msg}") 
+
+            parse_msg = msg.split(' ', 1)
+            
+            if parse_msg[0] == CODE_USERNAME:
+                parse_msg = msg.split(' ', 2)
+                self.server.new_user(parse_msg[1], self.client)
+                print(self.server.users)
+            
 
             
             # TODO : PARSE
