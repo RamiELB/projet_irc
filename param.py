@@ -3,8 +3,7 @@ FORMAT = "utf8"
 NB_CONNECTION = 10
 SERVER = "localhost"
 
-CODES = {
-    "USERNAME" : "[USERNAME] ",
-    "JOIN_CANAL" : "[JOIN_CANAL] ",
-    "DISCONNECT_MSG" : "!DISCONNECT"
-}
+CODES = ["[USERNAME]",
+    "[JOIN_CANAL]",
+    "[DISCONNECT_MSG]"
+]
