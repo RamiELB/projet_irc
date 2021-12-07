@@ -1,18 +1,7 @@
 import socket
 import threading
 import sys
-
-SIZE = 1024
-FORMAT = "utf8"
-DISCONNECT_MSG = "!DISCONNECT"
-NB_CONNECTION = 10
-SERVER = 'localhost'
-
-# -------------------------------------------------------------------------------------------#
-
-CODE_USERNAME = "[USERNAME] "
-
-# -------------------------------------------------------------------------------------------#
+import param
 
 
 class irc_client:
@@ -40,7 +29,7 @@ class irc_client:
         self.write_thread.start()
 
         # Send UserName Once
-        send_message = SendMessage(sc,CODE_USERNAME + user_name)
+        send_message = SendMessage(sc,param.CODES[0] + " " + user_name)
         send_message.start()
 
 
@@ -67,7 +56,7 @@ class ListenServer(threading.Thread):
       
     def run(self):
         while True:
-            print(self.client.socket.recv(SIZE).decode(FORMAT))
+            print(self.client.socket.recv(param.SIZE).decode(param.FORMAT))
 
 
 
@@ -79,16 +68,34 @@ class WriteServer(threading.Thread):
     def __init__(self, client): 
         threading.Thread.__init__(self) 
         self.client = client
+
+    def code_handler(self, msg):
+        code_received = msg.split(' ', 1)[0]
+
+
+        if code_received == '/help':
+            help()
+
+        elif code_received == param.CODES[1]: # JOIN
+
+            code_received = msg.split(' ', 2)
+            if len(code_received == 2):
+                msg = param.CODES[1] + " " +  msg
+                client.socket.send(msg.encode('utf8'))
+            else:
+                print("[ERROR] Must be 1 argument with /join")
+
+        elif code_received == param.CODES[2]: # DISCONNECT
+            client.socket.send(param.CODES)
+
+        else:
+            self.client.socket.send(msg.encode('utf8'))
     
     def run(self):
         while True:
             msg = input('')
-
-            parse = msg.split(' ', 1)
-            if parse[0] == '/help':
-                help()
-            else:
-                self.client.socket.send(msg.encode('utf8'))
+            self.code_handler(msg)
+           
 
 
 # -------------------------------------------------------------------------------------------#  
@@ -101,11 +108,9 @@ class SendMessage(threading.Thread):
         self.msg = msg
 
     def run(self):
-            self.server.send(self.msg.encode(FORMAT)) 
-
+            self.server.send(self.msg.encode(param.FORMAT)) 
 
 # -------------------------------------------------------------------------------------------#  
-
 
 def help():
         print('/away [message]')
@@ -124,7 +129,7 @@ def help():
 if __name__ == "__main__":
     args = sys.argv[1:]
     if len(args) == 2:
-        client = irc_client(args[0], SERVER, int(args[1]))
+        client = irc_client(args[0], param.SERVER, int(args[1]))
     else:
         print("[ERROR] 1st argument must be username, 2nd argument must be serve's name")
         
