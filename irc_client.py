@@ -11,6 +11,7 @@ class irc_client:
         self.user_name = user_name
         self.is_away = False
         self.msg_away = '' 
+        self.disconnect = False
 
         # Socket
         sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,7 +20,7 @@ class irc_client:
         self.socket = sc
 
         # Current canal
-        self.current_canal = "#Main" # By default
+        self.current_canal = None # By default
 
 
         # Listen and Write Threads
@@ -55,7 +56,14 @@ class ListenServer(threading.Thread):
         self.client = client
 
     def code_handler(self, msg):
-        pass
+
+        code_received = msg.split(' ', 1)[0]
+
+        if code_received == "[CONNECTED]":
+            canal = msg.split(' ', 1)[1]
+            self.client.current_canal = canal
+
+        return msg
       
     def run(self):
         while True:
@@ -83,7 +91,10 @@ class WriteServer(threading.Thread):
         elif code_received == param.CODES[1]: # JOIN
             code_received = msg.split(' ', 1)
             if len(code_received) == 2:
-                client.socket.send(msg.encode(param.FORMAT))
+                if (code_received[1][0] == "#"):
+                    client.socket.send(msg.encode(param.FORMAT))
+                else:
+                    print("[ERROR] Server Name must start with #")
             else:
                 print("[ERROR] Must be 1 argument with /join")
 
