@@ -84,7 +84,11 @@ class WriteServer(threading.Thread):
                 print("[ERROR] Must be 1 argument with /join")
 
         elif code_received == param.CODES[2]: # DISCONNECT
-            client.socket.send(param.CODES)
+            code_received = msg.split(' ', 1)
+            if len(code_received) == 1:
+                client.socket.send(msg.encode(param.FORMAT))
+            else:
+                print("[ERROR] Must be 0 argument with /disconnect")
 
         elif code_received == param.CODES[3]: # INVITE USER
             code_received = msg.split(' ', 1)
