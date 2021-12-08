@@ -5,5 +5,9 @@ SERVER = "localhost"
 
 CODES = ["[USERNAME]",
     "[JOIN_CANAL]",
-    "[DISCONNECT_MSG]"
+    "[DISCONNECT_MSG]",
+    "[INVITE_USER]",
+    "[LIST]",
+    "[MSG]",
+    "[NAMES]"
 ]
