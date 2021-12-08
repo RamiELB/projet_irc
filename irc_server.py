@@ -46,6 +46,9 @@ class irc_server:
             c = Canal(canal_name)
             self.canals[canal_name] = c
             c.connect(client)
+        msg = "[CONNECTED] " + canal_name
+        sendThread = SendMessageToUser(None, self.client, msg)
+        sendThread.start()
 
     def disconnect_from_canal(self, canal_name, client):
         if canal_name in self.canals:
@@ -132,8 +135,8 @@ class HandleClient(threading.Thread):
         
         elif code_received == param.CODES[1]:
             #JOIN
-            new_canal = msg.split(' ', 2)[1]
-            self.client.change_canal(new_canal)
+            new_canal_name = msg.split(' ', 2)[1]
+            self.server.connect_to_canal(new_canal_name, self.client)
 
         elif code_received == param.CODES[2]:
             #DISCONNECT
@@ -187,7 +190,7 @@ class SendMessage(threading.Thread):
     def __init__(self, client, msg, canal=None): 
         threading.Thread.__init__(self) 
         self.client = client
-        
+
         if canal == None:
             self.canal = self.client.current_canal
         else:
