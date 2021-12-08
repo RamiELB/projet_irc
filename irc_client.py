@@ -73,23 +73,48 @@ class WriteServer(threading.Thread):
         code_received = msg.split(' ', 1)[0]
 
 
-        if code_received == '/help':
+        if code_received == "/help":
             help()
 
         elif code_received == param.CODES[1]: # JOIN
-
-            code_received = msg.split(' ', 2)
-            if len(code_received == 2):
-                msg = param.CODES[1] + " " +  msg
-                client.socket.send(msg.encode('utf8'))
+            code_received = msg.split(' ', 1)
+            if len(code_received) == 2:
+                client.socket.send(msg.encode(param.FORMAT))
             else:
                 print("[ERROR] Must be 1 argument with /join")
 
         elif code_received == param.CODES[2]: # DISCONNECT
             client.socket.send(param.CODES)
 
+        elif code_received == param.CODES[3]: # INVITE USER
+            code_received = msg.split(' ', 1)
+            if len(code_received) == 2:
+                client.socket.send(msg.encode(param.FORMAT))
+            else:
+                print("[ERROR] Must be 1 argument with /invite")
+        
+        elif code_received == param.CODES[4]: # LIST
+            code_received = msg.split(' ', 1)
+            if len(code_received) == 1:
+                client.socket.send(msg.encode(param.FORMAT))
+            else:
+                 print("[ERROR] Must be 0 argument with /list")
+
+        elif code_received == param.CODES[5]: #MSG
+            code_received = msg.split(' ', 2)
+            if len(code_received) >= 2:
+                 client.socket.send(msg.encode(param.FORMAT))
+            else:
+                print("[ERROR] [Canal|UserName] or/and Message Missing")
+
+        elif code_received == param.CODES[6]: #NAMES
+            code_received = msg.split(' ', 1)
+            if len(code_received) <= 2:
+                client.socket.send(msg.encode(param.FORMAT))
+            else:
+                print("[ERROR] Must be at most 1 argument")                
         else:
-            self.client.socket.send(msg.encode('utf8'))
+            client.socket.send(msg.encode(param.FORMAT))
     
     def run(self):
         while True:
