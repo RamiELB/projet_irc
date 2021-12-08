@@ -18,8 +18,8 @@ class irc_server:
 
 
         # Main canal
-        main_canal = Canal("Main")
-        self.canals["Main"] = main_canal
+        main_canal = Canal("#Main")
+        self.canals["#Main"] = main_canal
 
 
         # SERVER
@@ -33,9 +33,11 @@ class irc_server:
 
     def new_user(self, user_name, client): 
         self.users[user_name] = client
-        client.create_user(user_name, self.canals["Main"])
+        client.create_user(user_name, self.canals["#Main"])
         self.nb_users += 1
         
+    def list_canals(self):
+        return list(self.canals.keys())
 
     def connect_to_canal(self, canal_name, client):
         if canal_name in self.canals:
@@ -125,12 +127,40 @@ class HandleClient(threading.Thread):
     def codes_handler(self, code_received, msg):
         if code_received == param.CODES[0]: 
             #USERNAME
-            parse_msg = msg.split(' ', 2)
-            self.server.new_user(parse_msg[1], self.client)
+            user_name = msg.split(' ', 2)[1]
+            self.server.new_user(user_name, self.client)
+        
+        elif code_received == param.CODES[1]:
+            #JOIN
+            new_canal = msg.split(' ', 2)[1]
+            self.client.change_canal(new_canal)
 
-        elif code_received == param.CODE[2]:
+        elif code_received == param.CODES[2]:
             #DISCONNECT
+            self.client.disconnect()
             self.connected = False
+
+        elif code_received == param.CODES[3]:
+            #INVITE
+            pass
+
+        elif code_received == param.CODES[4]:
+            msg = "List of available canals:"
+            for canal_name in self.server.list_canals():
+                msg = msg + " " + canal_name
+            sendThread = SendMessageToUser(None, self.client, msg)
+            sendThread.start()
+
+        elif code_received == param.CODES[5]:
+            #MSG
+            pass
+
+        elif code_received == param.CODES[6]:
+            #NAMES
+            pass
+
+
+
 
     def run(self):
         self.connected = True
@@ -146,27 +176,42 @@ class HandleClient(threading.Thread):
             else :
                 sendThread = SendMessage(self.client, msg) ## SOIT ON CREE UN THREAD A CHAQUE ENVOIE DE MESSAGE SOIT ON UTILISE LE MEME THREAD QUE CELUI DE LIRE , THREAD EN CONTINUE PAS POSSIBLE ?
                 sendThread.start()
-
         
-        self.client.disconnect()
 
 
 # -------------------------------------------------------------------------------------------#
 
 
 class SendMessage(threading.Thread):
+    #send a message to a canal
     def __init__(self, client, msg, canal=None): 
         threading.Thread.__init__(self) 
         self.client = client
+        
         if canal == None:
             self.canal = self.client.current_canal
         else:
             self.canal = canal
-        self.msg = msg
+
+        self.msg = client.user_name + ': ' + msg
     
     def run(self):
         for c in self.canal.users.values():
             c.send_msg(self.msg)
+
+class SendMessageToUser(threading.Thread):
+    #send a message to a user
+    def __init__(self, client_from, client_to, msg): 
+        threading.Thread.__init__(self)
+        self.client_to = client_to 
+        self.msg = msg
+
+        if client_from != None:
+            # else = message from server
+            pass
+    
+    def run(self):
+        self.client_to.send_msg(self.msg)
 
 
 # -------------------------------------------------------------------------------------------#
