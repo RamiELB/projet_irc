@@ -33,7 +33,8 @@ class irc_server:
 
     def new_user(self, user_name, client): 
         self.users[user_name] = client
-        client.create_user(user_name, self.canals["#Main"])
+        client.create_user(user_name)
+        self.connect_to_canal("#Main", client)
         self.nb_users += 1
         
     def list_canals(self):
@@ -47,7 +48,7 @@ class irc_server:
             self.canals[canal_name] = c
             c.connect(client)
         msg = "[CONNECTED] " + canal_name
-        sendThread = SendMessageToUser(None, self.client, msg)
+        sendThread = SendMessageToUser(None, client, msg)
         sendThread.start()
 
     def disconnect_from_canal(self, canal_name, client):
@@ -86,11 +87,10 @@ class Client:
         self.socket_client = socket_client
         self.current_canal = None
         
-    def create_user(self, user_name, main_canal):
+    def create_user(self, user_name):
         self.user_name = user_name
         self.is_away = False
         self.msg_away = ''
-        main_canal.connect(self)
 
     def away(self, away_msg=''):
         self.is_away = not self.is_away
