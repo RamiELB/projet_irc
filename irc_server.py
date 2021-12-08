@@ -1,7 +1,6 @@
 import socket
 import threading
 import sys
-from irc_client import irc_client
 import param
 
 # -------------------------------------------------------------------------------------------#
@@ -38,17 +37,17 @@ class irc_server:
         self.nb_users += 1
         
 
-    def connect_to_canal(self, canal_name, user_name):
+    def connect_to_canal(self, canal_name, client):
         if canal_name in self.canals:
-            self.canals[canal_name].connect(user_name)
+            self.canals[canal_name].connect(client)
         else:
-            c = canal(canal_name)
+            c = Canal(canal_name)
             self.canals[canal_name] = c
-            c.connect(user_name)
+            c.connect(client)
 
-    def disconnect_from_canal(self, canal_name, user_name):
+    def disconnect_from_canal(self, canal_name, client):
         if canal_name in self.canals:
-            self.canals[canal_name].disconnect(user_name)
+            self.canals[canal_name].disconnect(client)
     
     def start(self):
         while True:
@@ -63,14 +62,14 @@ class irc_server:
 class Canal:
     def __init__(self, canal_name):
         self.canal_name = canal_name
-        self.users = []
+        self.users = {}
 
-    def connect(self, user_name):
-        self.users.append(user_name)
+    def connect(self, client):
+        self.users[client.user_name] = client
+        client.change_canal(self)
 
-    def disconnect(self, user_name):
-        if user_name in self.users:
-            self.users.remove(user_name)
+    def disconnect_from_canal(self, client):
+        self.users.pop(client.user_name, None)
 
     def list_users(self):
         return self.users
@@ -80,11 +79,13 @@ class Canal:
 class Client:
     def __init__(self, socket_client):
         self.socket_client = socket_client
+        self.current_canal = None
         
-    def create_user(self, username, main_canal):
+    def create_user(self, user_name, main_canal):
+        self.user_name = user_name
         self.is_away = False
-        self.msg_away = '' 
-        self.current_canal = main_canal
+        self.msg_away = ''
+        main_canal.connect(self)
 
     def away(self, away_msg=''):
         self.is_away = not self.is_away
@@ -96,6 +97,8 @@ class Client:
             return self.away_msg
 
     def change_canal(self, new_canal):
+        if self.current_canal != None:
+            self.current_canal.disconnect_from_canal(self)
         self.current_canal = new_canal
 
     def recv_msg(self):
@@ -103,6 +106,10 @@ class Client:
 
     def send_msg(self, msg):
         self.socket_client.send(msg.encode("utf-8"))
+
+    def disconnect(self):
+        self.current_canal.disconnect_from_canal(self)
+        self.socket_client.close()
 
 # -------------------------------------------------------------------------------------------#
 
@@ -120,7 +127,6 @@ class HandleClient(threading.Thread):
             #USERNAME
             parse_msg = msg.split(' ', 2)
             self.server.new_user(parse_msg[1], self.client)
-            print(self.server.users)
 
         elif code_received == param.CODE[2]:
             #DISCONNECT
@@ -128,38 +134,39 @@ class HandleClient(threading.Thread):
 
     def run(self):
         self.connected = True
+
         while self.connected:
             msg = self.client.recv_msg()
-            print(f"[{self.addr}] {msg}") 
             parse_msg = msg.split(' ', 1)
             
             code_received = parse_msg[0]
 
             if code_received in param.CODES:
                 self.codes_handler(code_received, msg)
+            else :
+                sendThread = SendMessage(self.client, msg) ## SOIT ON CREE UN THREAD A CHAQUE ENVOIE DE MESSAGE SOIT ON UTILISE LE MEME THREAD QUE CELUI DE LIRE , THREAD EN CONTINUE PAS POSSIBLE ?
+                sendThread.start()
 
-
-            # TODO : PARSE
-            msg = f"Msg received: {msg}"
-            sendThread = SendMessage(self.client, msg) ## SOIT ON CREE UN THREAD A CHAQUE ENVOIE DE MESSAGE SOIT ON UTILISE LE MEME THREAD QUE CELUI DE LIRE , THREAD EN CONTINUE PAS POSSIBLE ?
-            sendThread.start()
-
-       
-        self.client.close()
+        
+        self.client.disconnect()
 
 
 # -------------------------------------------------------------------------------------------#
 
 
 class SendMessage(threading.Thread):
-    def __init__(self, client, msg): 
+    def __init__(self, client, msg, canal=None): 
         threading.Thread.__init__(self) 
         self.client = client
-        self.canal = self.client.current_canal
+        if canal == None:
+            self.canal = self.client.current_canal
+        else:
+            self.canal = canal
         self.msg = msg
     
     def run(self):
-        self.client.send_msg(self.msg)
+        for c in self.canal.users.values():
+            c.send_msg(self.msg)
 
 
 # -------------------------------------------------------------------------------------------#
