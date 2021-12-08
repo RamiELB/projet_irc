@@ -18,8 +18,8 @@ class irc_client:
         sc.connect((host,port))
         self.socket = sc
 
-        # Current channel
-        self.current_channel = "TBD (lorsqu'on se connecte le serveur doit envoyer son channel principal)"
+        # Current canal
+        self.current_canal = "#Main" # By default
 
 
         # Listen and Write Threads
@@ -42,8 +42,8 @@ class irc_client:
         if self.is_away:
             return self.away_msg
 
-    def change_channel(self, new_channel):
-        self.current_channel = new_channel
+    def change_canal(self, new_canal):
+        self.current_canal = new_canal
 
 
 # -------------------------------------------------------------------------------------------#
@@ -53,10 +53,15 @@ class ListenServer(threading.Thread):
     def __init__(self,client): 
         threading.Thread.__init__(self)
         self.client = client
+
+    def code_handler(self, msg):
+        pass
       
     def run(self):
         while True:
-            print(self.client.socket.recv(param.SIZE).decode(param.FORMAT))
+            msg = self.client.socket.recv(param.SIZE).decode(param.FORMAT)
+            toPrint = self.code_handler(msg)
+            print(toPrint)
 
 
 
@@ -71,7 +76,6 @@ class WriteServer(threading.Thread):
 
     def code_handler(self, msg):
         code_received = msg.split(' ', 1)[0]
-
 
         if code_received == "/help":
             help()
@@ -122,7 +126,7 @@ class WriteServer(threading.Thread):
     
     def run(self):
         while True:
-            msg = input('')
+            msg = input(self.client.current_canal)
             self.code_handler(msg)
            
 
@@ -145,10 +149,10 @@ def help():
         print('/away [message]')
         print('/help')
         print('/invite <user_name>')
-        print('/join <channel> [ckey]')
+        print('/join <canal> [ckey]')
         print('/list')
         print('/msg [canal|nick] message')
-        print('/names [channel]')
+        print('/names [canal]')
 
 
 
