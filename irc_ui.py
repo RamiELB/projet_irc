@@ -114,7 +114,14 @@ class irc_ui(tk.Frame):
 
 		elif code_received == param.CODES[6]: #NAMES
 			code_received = msg.split(' ', 1)
-			if len(code_received) <= 2:
+
+			if len(code_received) == 2:
+				if (code_received[1][0] == "#"):
+					toSend = True
+				else:
+					error = ("[ERROR] Server Name must start with #")
+					
+			elif len(code_received) == 1:
 				toSend = True
 			else:
 				error = ("[ERROR] Must be at most 1 argument")                
