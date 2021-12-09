@@ -62,6 +62,13 @@ class irc_server:
             handle.start()
             print(f"[ACTIVE CONNECTION] {threading.active_count() - 1}")
 
+    def list_users(self):
+        return list(self.users.keys())
+
+    def get_user_by_username(self, user_name):
+        if user_name in self.list_users():
+            return self.users[user_name]
+        return None
 # -------------------------------------------------------------------------------------------#
 
 
@@ -116,6 +123,9 @@ class Client:
         self.current_canal.disconnect_from_canal(self)
         self.socket_client.close()
 
+    def get_canal(self):
+        return self.current_canal
+
 # -------------------------------------------------------------------------------------------#
 
 
@@ -145,9 +155,16 @@ class HandleClient(threading.Thread):
 
         elif code_received == param.CODES[3]:
             #INVITE
-            pass
+            user_name = msg.split(' ', 2)[1]
+            invited_user = self.server.get_user_by_username(user_name)
+            if invited_user == None:
+                SendMessageToUser(None, self.client, "[ERROR] user " + user_name + " does not exist.")
+            else:
+                SendMessageToUser(self.client, invited_user, "[INVITE] " + self.client.user_name + " " + self.client.get_canal())
+            
 
         elif code_received == param.CODES[4]:
+            #LIST
             msg = "List of available canals:"
             for canal_name in self.server.list_canals():
                 msg = msg + " " + canal_name
