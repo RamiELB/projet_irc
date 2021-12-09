@@ -13,6 +13,7 @@ class irc_client:
         self.is_away = False
         self.msg_away = '' 
         self.disconnect = False
+        self.invitation = [False, ""]
 
         # Socket
         sc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
