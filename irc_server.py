@@ -74,6 +74,25 @@ class irc_server:
         if name in self.list_canals():
             return self.canals[name]
         return None
+
+    def names(self, canal_name = None):
+        msg = ""
+        if canal_name == None:
+            for c_name in self.list_canals():
+                canal = self.get_canal_by_name(c_name)
+                msg = msg + "Canal " + c_name + ":\n"
+                for u_name in canal.list_users():
+                    msg = msg + "  -"+u_name+"\n"
+        else:
+            canal = self.get_canal_by_name(canal_name)
+            if canal == None:
+                msg = "[ERROR] canal " + canal_name + " does not exist."
+            else:
+                msg = msg + "Canal " + canal_name + ":\n"
+                for u_name in canal.list_users():
+                    msg = msg + "  -"+u_name+"\n"
+        return msg
+
 # -------------------------------------------------------------------------------------------#
 
 
@@ -90,7 +109,7 @@ class Canal:
         self.users.pop(client.user_name, None)
 
     def list_users(self):
-        return self.users
+        return list(self.users.keys())
 
     def get_canal_name(self):
         return self.canal_name
@@ -192,7 +211,8 @@ class HandleClient(threading.Thread):
                 if canal == None :
                     sendThread = SendMessageToUser(None, self.client, "[ERROR] canal " + name + " does not exist.")
                 else:
-                    sendThread = SendMessage(self.client, msg, canal)
+                    answer = "(" + "->" + name + ") " + msg.split(' ', 2)[2]
+                    sendThread = SendMessage(self.client, answer, canal)
                 sendThread.start()
             else:
                 target_user = self.server.get_user_by_username(name)
@@ -204,7 +224,13 @@ class HandleClient(threading.Thread):
 
         elif code_received == param.CODES[6]:
             #NAMES
-            pass
+            msg = msg.split(' ', 3)
+            if len(msg) < 2:
+                answer = self.server.names()
+            else:
+                answer = self.server.names(canal_name = msg[1])
+            sendThread = SendMessageToUser(None, self.client, answer)
+            sendThread.start()
 
 
 
@@ -258,7 +284,6 @@ class SendMessageToUser(threading.Thread):
             self.msg = "("+client_from.get_user_name()+") " + self.msg
     
     def run(self):
-        print("ENVOIE DU MSG "+ self.msg + " A " + self.client_to.get_user_name())
         self.client_to.send_msg(self.msg)
 
 
