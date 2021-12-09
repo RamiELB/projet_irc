@@ -1,7 +1,8 @@
 import socket
-import threading
 import sys
 import param
+from irc_ui import irc_ui
+from irc_ui import SendMessage
 
 
 class irc_client:
@@ -22,17 +23,13 @@ class irc_client:
         # Current canal
         self.current_canal = None # By default
 
-
-        # Listen and Write Threads
-        self.listen_thread = ListenServer(self)
-        self.write_thread = WriteServer(self)
-        self.listen_thread.start()
-        self.write_thread.start()
-
         # Send UserName Once
         send_message = SendMessage(sc,param.CODES[0] + " " + user_name)
         send_message.start()
 
+        # IRC_UI
+        self.ui = irc_ui(self)
+        self.ui.start()
 
     def away(self, away_msg=''):
         self.is_away = not self.is_away
@@ -45,127 +42,6 @@ class irc_client:
 
     def change_canal(self, new_canal):
         self.current_canal = new_canal
-
-
-# -------------------------------------------------------------------------------------------#
-
-
-class ListenServer(threading.Thread):
-    def __init__(self,client): 
-        threading.Thread.__init__(self)
-        self.client = client
-
-    def code_handler(self, msg):
-
-        code_received = msg.split(' ', 1)[0]
-
-        if code_received == "[CONNECTED]":
-            canal = msg.split(' ', 1)[1]
-            self.client.current_canal = canal
-
-        return msg
-      
-    def run(self):
-        while True:
-            msg = self.client.socket.recv(param.SIZE).decode(param.FORMAT)
-            toPrint = self.code_handler(msg)
-            print(toPrint)
-
-
-
-# -------------------------------------------------------------------------------------------#
-
-
-
-class WriteServer(threading.Thread):
-    def __init__(self, client): 
-        threading.Thread.__init__(self) 
-        self.client = client
-
-    def code_handler(self, msg):
-        code_received = msg.split(' ', 1)[0]
-
-        if code_received == "/help":
-            help()
-
-        elif code_received == param.CODES[1]: # JOIN
-            code_received = msg.split(' ', 1)
-            if len(code_received) == 2:
-                if (code_received[1][0] == "#"):
-                    client.socket.send(msg.encode(param.FORMAT))
-                else:
-                    print("[ERROR] Server Name must start with #")
-            else:
-                print("[ERROR] Must be 1 argument with /join")
-
-        elif code_received == param.CODES[2]: # DISCONNECT
-            code_received = msg.split(' ', 1)
-            if len(code_received) == 1:
-                client.socket.send(msg.encode(param.FORMAT))
-            else:
-                print("[ERROR] Must be 0 argument with /disconnect")
-
-        elif code_received == param.CODES[3]: # INVITE USER
-            code_received = msg.split(' ', 1)
-            if len(code_received) == 2:
-                client.socket.send(msg.encode(param.FORMAT))
-            else:
-                print("[ERROR] Must be 1 argument with /invite")
-        
-        elif code_received == param.CODES[4]: # LIST
-            code_received = msg.split(' ', 1)
-            if len(code_received) == 1:
-                client.socket.send(msg.encode(param.FORMAT))
-            else:
-                 print("[ERROR] Must be 0 argument with /list")
-
-        elif code_received == param.CODES[5]: #MSG
-            code_received = msg.split(' ', 2)
-            if len(code_received) >= 2:
-                 client.socket.send(msg.encode(param.FORMAT))
-            else:
-                print("[ERROR] [Canal|UserName] or/and Message Missing")
-
-        elif code_received == param.CODES[6]: #NAMES
-            code_received = msg.split(' ', 1)
-            if len(code_received) <= 2:
-                client.socket.send(msg.encode(param.FORMAT))
-            else:
-                print("[ERROR] Must be at most 1 argument")                
-        else:
-            client.socket.send(msg.encode(param.FORMAT))
-    
-    def run(self):
-        while True:
-            msg = input(self.client.current_canal)
-            self.code_handler(msg)
-           
-
-
-# -------------------------------------------------------------------------------------------#  
-
-
-class SendMessage(threading.Thread):
-    def __init__(self, server, msg): 
-        threading.Thread.__init__(self) 
-        self.server = server
-        self.msg = msg
-
-    def run(self):
-            self.server.send(self.msg.encode(param.FORMAT)) 
-
-# -------------------------------------------------------------------------------------------#  
-
-def help():
-        print('/away [message]')
-        print('/help')
-        print('/invite <user_name>')
-        print('/join <canal> [ckey]')
-        print('/list')
-        print('/msg [canal|nick] message')
-        print('/names [canal]')
-
-
 
 # -------------------------------------------------------------------------------------------#
 
