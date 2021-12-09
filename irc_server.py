@@ -87,6 +87,9 @@ class Canal:
     def list_users(self):
         return self.users
 
+    def get_canal_name(self):
+        return self.canal_name
+
 # -------------------------------------------------------------------------------------------#
 
 class Client:
@@ -160,7 +163,7 @@ class HandleClient(threading.Thread):
             if invited_user == None:
                 SendMessageToUser(None, self.client, "[ERROR] user " + user_name + " does not exist.")
             else:
-                SendMessageToUser(self.client, invited_user, "[INVITE] " + self.client.user_name + " " + self.client.get_canal())
+                SendMessageToUser(self.client, invited_user, "[INVITE] " + self.client.user_name + " " + self.client.get_canal().get_canal_name())
             
 
         elif code_received == param.CODES[4]:
