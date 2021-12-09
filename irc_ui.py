@@ -72,7 +72,14 @@ class irc_ui(tk.Frame):
 				self.client.invitation = [False,""]
 
 		elif code_received == "/help":
-			help()
+			toPrint = '/away [message] \n'\
+			+ ('/help  \n')\
+        	+ ('/invite <user_name>\n')\
+        	+ ('/join <canal> [ckey]\n')\
+        	+ ('/list\n')\
+        	+ ('/msg [canal|nick] message\n')\
+        	+ ('/names [canal]')
+			self.ui.Output.insert(tk.END, toPrint + "\n")
 
 		elif code_received == param.CODES[1]: # JOIN
 			code_received = msg.split(' ', 1)
@@ -80,7 +87,7 @@ class irc_ui(tk.Frame):
 				if (code_received[1][0] == "#"):
 					toSend = True
 				else:
-					error = ("[ERROR] Server Name must start with #")
+					error = ("[ERROR] Canal name must start with #")
 			else:
 				error = ("[ERROR] Must be 1 argument with /join")
 
@@ -119,8 +126,8 @@ class irc_ui(tk.Frame):
 				if (code_received[1][0] == "#"):
 					toSend = True
 				else:
-					error = ("[ERROR] Server Name must start with #")
-					
+					error = ("[ERROR] Canal Name must start with #")
+
 			elif len(code_received) == 1:
 				toSend = True
 			else:
