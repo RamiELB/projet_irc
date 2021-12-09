@@ -44,6 +44,7 @@ class irc_ui(tk.Frame):
 	def take_input(self, event):
 		INPUT = self.Input.get("1.0", "end-2c")
 		if self.code_handler(INPUT):
+			print("J'envoie le message : " + INPUT)
 			send_message = SendMessage(self.client.socket, INPUT)
 			send_message.start()
 			self.Input.delete("1.0", tk.END)
@@ -61,12 +62,19 @@ class irc_ui(tk.Frame):
 		toSend = False
 		error = ""
 
+
+		if self.client.invitation[0]:
+			if code_received == "oui":
+				msg = param.CODES[1] + " " + self.client.invitation[1]
+				send_message = SendMessage(self.client.socket, msg)
+				send_message.start()
+				toSend = True
+
 		if code_received == "/help":
 			help()
 
 		elif code_received == param.CODES[1]: # JOIN
 			code_received = msg.split(' ', 1)
-			print("joinfunc")
 			if len(code_received) == 2:
 				if (code_received[1][0] == "#"):
 					toSend = True
@@ -86,6 +94,7 @@ class irc_ui(tk.Frame):
 			code_received = msg.split(' ', 1)
 			if len(code_received) == 2:
 				toSend = True
+				print("le message est validé on va envoyé l'invite au server")
 			else:
 				error = ("[ERROR] Must be 1 argument with /invite")
 
@@ -122,15 +131,27 @@ class ListenServer(threading.Thread):
 		threading.Thread.__init__(self)
 		self.client = client
 		self.ui = ui
-
+		
 	def code_handler(self, msg):
 		code_received = msg.split(' ', 1)[0]
-
+		print("client je recois le code : " + code_received)
 		if code_received == "[CONNECTED]":
 			canal = msg.split(' ', 1)[1]
 			self.client.current_canal = canal
 			self.ui.update_title()
+			msg = "Vous avez rejoint le canal " + canal
+
+			if self.client.invitation[0]:
+				self.client.invitation = [False,""]
 			
+		elif code_received == "[INVITE]":
+			print("je recois invite du server")
+			split = msg.split(' ', 2)
+			user = split[1]
+			canal_name = split[2]
+			self.client.invitation = [True, canal_name]
+			msg = user + " vous invite dans le canal " + canal_name + " (oui/non)"
+
 
 		return msg
 
