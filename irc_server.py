@@ -69,6 +69,11 @@ class irc_server:
         if user_name in self.list_users():
             return self.users[user_name]
         return None
+
+    def get_canal_by_name(self, name):
+        if name in self.list_canals():
+            return self.canals[name]
+        return None
 # -------------------------------------------------------------------------------------------#
 
 
@@ -129,6 +134,9 @@ class Client:
     def get_canal(self):
         return self.current_canal
 
+    def get_user_name(self):
+        return self.user_name
+
 # -------------------------------------------------------------------------------------------#
 
 
@@ -161,10 +169,11 @@ class HandleClient(threading.Thread):
             user_name = msg.split(' ', 2)[1]
             invited_user = self.server.get_user_by_username(user_name)
             if invited_user == None:
-                SendMessageToUser(None, self.client, "[ERROR] user " + user_name + " does not exist.")
+                sendThread = SendMessageToUser(None, self.client, "[ERROR] user " + user_name + " does not exist.")
+                sendThread.start()
             else:
-                SendMessageToUser(self.client, invited_user, "[INVITE] " + self.client.user_name + " " + self.client.get_canal().get_canal_name())
-            
+                sendThread = SendMessageToUser(None, invited_user, "[INVITE] " + self.client.user_name + " " + self.client.get_canal().get_canal_name())
+                sendThread.start()
 
         elif code_received == param.CODES[4]:
             #LIST
@@ -176,7 +185,22 @@ class HandleClient(threading.Thread):
 
         elif code_received == param.CODES[5]:
             #MSG
-            pass
+            name = msg.split(' ', 2)[1]
+            if name[0] == "#":
+                #msg to canal
+                canal = self.server.get_canal_by_name(name)
+                if canal == None :
+                    sendThread = SendMessageToUser(None, self.client, "[ERROR] canal " + name + " does not exist.")
+                else:
+                    sendThread = SendMessage(self.client, msg, canal)
+                sendThread.start()
+            else:
+                target_user = self.server.get_user_by_username(name)
+                if target_user == None:
+                    sendThread = SendMessageToUser(None, self.client, "[ERROR] user " + name + " does not exist.")
+                else:
+                    sendThread = SendMessageToUser(self.client, target_user, msg.split(' ', 2)[2])
+                sendThread.start()
 
         elif code_received == param.CODES[6]:
             #NAMES
@@ -197,7 +221,7 @@ class HandleClient(threading.Thread):
             if code_received in param.CODES:
                 self.codes_handler(code_received, msg)
             else :
-                sendThread = SendMessage(self.client, msg) ## SOIT ON CREE UN THREAD A CHAQUE ENVOIE DE MESSAGE SOIT ON UTILISE LE MEME THREAD QUE CELUI DE LIRE , THREAD EN CONTINUE PAS POSSIBLE ?
+                sendThread = SendMessage(self.client, msg)
                 sendThread.start()
         
 
@@ -231,9 +255,10 @@ class SendMessageToUser(threading.Thread):
 
         if client_from != None:
             # else = message from server
-            pass
+            self.msg = "("+client_from.get_user_name()+") " + self.msg
     
     def run(self):
+        print("ENVOIE DU MSG "+ self.msg + " A " + self.client_to.get_user_name())
         self.client_to.send_msg(self.msg)
 
 
