@@ -46,6 +46,8 @@ class irc_ui(tk.Frame):
 		if self.code_handler(INPUT):
 			send_message = SendMessage(self.client.socket, INPUT)
 			send_message.start()
+			if INPUT == param.CODES[2]:
+				self.root.quit()
 
 		self.Input.delete("1.0", tk.END)
 
