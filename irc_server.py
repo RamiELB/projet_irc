@@ -40,6 +40,9 @@ class irc_server:
     def list_canals(self):
         return list(self.canals.keys())
 
+    def disconnect_from_server(self, client):
+        self.users.pop(client.user_name, None)
+
     def connect_to_canal(self, canal_name, client):
         if canal_name in self.canals:
             self.canals[canal_name].connect(client)
@@ -148,7 +151,6 @@ class Client:
 
     def disconnect(self):
         self.current_canal.disconnect_from_canal(self)
-        self.socket_client.close()
 
     def get_canal(self):
         return self.current_canal
@@ -180,8 +182,8 @@ class HandleClient(threading.Thread):
 
         elif code_received == param.CODES[2]:
             #DISCONNECT
+            self.server.disconnect_from_server(self.client)
             self.client.disconnect()
-            self.connected = False
 
         elif code_received == param.CODES[3]:
             #INVITE
@@ -213,6 +215,8 @@ class HandleClient(threading.Thread):
                 else:
                     answer = "(" + "->" + name + ") " + msg.split(' ', 2)[2]
                     sendThread = SendMessage(self.client, answer, canal)
+                    sendThread2 = SendMessageToUser(None, self.client, answer)
+                    sendThread2.start()
                 sendThread.start()
             else:
                 target_user = self.server.get_user_by_username(name)
@@ -223,6 +227,8 @@ class HandleClient(threading.Thread):
                         sendThread = SendMessageToUser(target_user, self.client, target_user.get_away_msg())
                     else:
                         sendThread = SendMessageToUser(self.client, target_user, msg.split(' ', 2)[2])
+                        sendThread2 = SendMessageToUser(None, self.client, "(to " + name + ") " + msg.split(' ', 2)[2])
+                        sendThread2.start()
                 sendThread.start()
 
         elif code_received == param.CODES[6]:
