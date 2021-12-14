@@ -9,5 +9,6 @@ CODES = ["[USERNAME]",
     "/invite",
     "/list",
     "/msg",
-    "/names"
+    "/names",
+    "/away"
 ]

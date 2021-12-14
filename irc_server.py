@@ -219,7 +219,10 @@ class HandleClient(threading.Thread):
                 if target_user == None:
                     sendThread = SendMessageToUser(None, self.client, "[ERROR] user " + name + " does not exist.")
                 else:
-                    sendThread = SendMessageToUser(self.client, target_user, msg.split(' ', 2)[2])
+                    if target_user.is_away:
+                        sendThread = SendMessageToUser(target_user, self.client, target_user.get_away_msg())
+                    else:
+                        sendThread = SendMessageToUser(self.client, target_user, msg.split(' ', 2)[2])
                 sendThread.start()
 
         elif code_received == param.CODES[6]:
@@ -231,6 +234,22 @@ class HandleClient(threading.Thread):
                 answer = self.server.names(canal_name = msg[1])
             sendThread = SendMessageToUser(None, self.client, answer)
             sendThread.start()
+
+        elif code_received == param.CODES[7]:
+            #AWAY
+            msg = msg.split(' ', 1)
+            if len(msg) < 2:
+                away_msg = "is away"
+            else:
+                away_msg = "[AWAY] " + msg[1]
+            self.client.away(away_msg)
+            if self.client.is_away:
+                msg_to_send = "You are now away. Other users won't be able to msg you."
+            else:
+                msg_to_send = "You are no longer away."
+            sendThread = SendMessageToUser(None, self.client, msg_to_send)
+            sendThread.start()
+            
 
 
 

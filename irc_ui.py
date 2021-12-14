@@ -79,7 +79,7 @@ class irc_ui(tk.Frame):
         	+ ('/list\n')\
         	+ ('/msg [canal|nick] message\n')\
         	+ ('/names [canal]')
-			self.ui.Output.insert(tk.END, toPrint + "\n")
+			self.Output.insert(tk.END, toPrint + "\n")
 
 		elif code_received == param.CODES[1]: # JOIN
 			code_received = msg.split(' ', 1)
